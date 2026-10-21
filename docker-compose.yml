@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: campusbite-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: campusbite
+    ports:
+      - "5432:5432"
+    volumes:
+      - campusbite_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campusbite-app
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgrespassword@postgres:5432/campusbite?schema=public
+      - JWT_ACCESS_SECRET=e9b25f82a9019d45a9e324c47b56d81230fb39a14d59bc4381fe4a01c38e9102
+      - JWT_REFRESH_SECRET=784a9e018d9f1049bc2384a59fe01c2384a14d59bc4381fe4a01c38e910238a1
+      - NEXT_PUBLIC_APP_URL=http://localhost:3000
+      - NODE_ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  campusbite_pgdata:
